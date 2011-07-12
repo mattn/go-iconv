@@ -5,6 +5,7 @@ package iconv
 
 // #include <iconv.h>
 // #include <errno.h>
+// #cgo LDFLAGS: -liconv
 import "C"
 
 import (
