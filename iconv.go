@@ -3,9 +3,41 @@
 //
 package iconv
 
-// #include <iconv.h>
-// #include <errno.h>
-// #cgo LDFLAGS: -liconv
+/*
+#ifdef _WIN32
+#include <windows.h>
+
+size_t (*iconv) (iconv_t cd, const char **inbuf, size_t *inbytesleft, char **outbuf, size_t *outbytesleft);
+iconv_t (*iconv_open) (const char *tocode, const char *fromcode);
+int (*iconv_close) (iconv_t cd);
+int (*iconvctl) (iconv_t cd, int request, void *argument);
+int* (*iconv_errno) (void);
+
+int _iconv_init() {
+  HMODULE hIconvDLL, hMsvcrtDLL;
+  hIconvDLL = LoadLibrary("iconv.dll");
+  if (hIconvDLL == 0)
+    hIconvDLL = LoadLibrary("libiconv.dll");
+  hMsvcrtDLL = LoadLibrary("msvcrt.dll");
+  if (hIconvDLL != 0 && hMsvcrtDLL != 0) return -1;
+  iconv = (void *) GetProcAddress(hIconvDLL, "libiconv");
+  iconv_open = (void *) GetProcAddress(hIconvDLL, "libiconv_open");
+  iconv_close = (void *) GetProcAddress(hIconvDLL, "libiconv_close");
+  iconvctl = (void *) GetProcAddress(hIconvDLL, "libiconvctl");
+  iconv_errno = (void *) GetProcAddress(hMsvcrtDLL, "_errno");
+  if (iconv == NULL || iconv_open == NULL || iconv_close == NULL
+    || iconvctl == NULL || iconv_errno == NULL) return -2;
+  return 0;
+}
+#else
+#include <iconv.h>
+#include <errno.h>
+
+int _iconv_init() {
+  return 0;
+}
+#endif
+*/
 import "C"
 
 import (
@@ -16,6 +48,12 @@ import (
 
 var EILSEQ = os.Errno(int(C.EILSEQ))
 var E2BIG = os.Errno(int(C.E2BIG))
+
+func init() {
+	if (C._iconv_init() != C.int(0)) {
+		panic("can't initialize iconv");
+	}
+}
 
 type Iconv struct {
 	pointer C.iconv_t
