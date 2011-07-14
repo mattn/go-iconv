@@ -95,7 +95,11 @@ type Iconv struct {
 }
 
 func Open(tocode string, fromcode string) (*Iconv, os.Error) {
-	ret, err := C.iconv_open(C.CString(tocode), C.CString(fromcode))
+	pt := C.CString(tocode)
+	pf := C.CString(fromcode)
+	defer C.free(unsafe.Pointer(pt))
+	defer C.free(unsafe.Pointer(pf))
+	ret, err := C.iconv_open(pt, pf)
 	if err != nil {
 		return nil, err
 	}
