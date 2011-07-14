@@ -5,7 +5,6 @@ package iconv
 
 import (
 	"testing"
-	"os"
 )
 
 var testData = []struct{utf8, other, otherEncoding string} {
@@ -68,8 +67,8 @@ func TestIconvReverse(t *testing.T) {
 
 func TestError(t *testing.T) {
 	_, err := Open("INVALID_ENCODING", "INVALID_ENCODING")
-	if err != os.EINVAL {
-		t.Errorf("Unexpected error: %#s (expected %#s)", err, os.EINVAL)
+	if err != EINVAL {
+		t.Errorf("Unexpected error: %#s (expected %#s)", err, EINVAL)
 	}
 
 	cd, _ := Open("ISO-8859-15", "UTF-8")

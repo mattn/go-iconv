@@ -6,32 +6,66 @@ package iconv
 /*
 #ifdef _WIN32
 #include <windows.h>
+#include <errno.h>
 
-size_t (*iconv) (iconv_t cd, const char **inbuf, size_t *inbytesleft, char **outbuf, size_t *outbytesleft);
-iconv_t (*iconv_open) (const char *tocode, const char *fromcode);
-int (*iconv_close) (iconv_t cd);
-int (*iconvctl) (iconv_t cd, int request, void *argument);
-int* (*iconv_errno) (void);
+typedef int iconv_t;
+
+static HMODULE iconv_lib;
+static HMODULE msvcrt_lib;
+static size_t (*_iconv) (iconv_t cd, const char **inbuf, size_t *inbytesleft, char **outbuf, size_t *outbytesleft);
+static iconv_t (*_iconv_open) (const char *tocode, const char *fromcode);
+static int (*_iconv_close) (iconv_t cd);
+static int (*_iconvctl) (iconv_t cd, int request, void *argument);
+static int* (*_iconv_errno) (void);
+
+#define ICONV_E2BIG  7
+#define ICONV_EINVAL 22
+#define ICONV_EILSEQ 42
+
+size_t iconv(iconv_t cd, const char **inbuf, size_t *inbytesleft, char **outbuf, size_t *outbytesleft) {
+  return _iconv(cd, inbuf, inbytesleft, outbuf, outbytesleft);
+}
+
+iconv_t iconv_open(const char *tocode, const char *fromcode) {
+  return _iconv_open(tocode, fromcode);
+}
+
+int iconv_close(iconv_t cd) {
+  return _iconv_close(cd);
+}
+
+int iconvctl(iconv_t cd, int request, void *argument) {
+  return _iconvctl(cd, request, argument);
+}
+
+int iconv_errno(void) {
+  int *p = _iconv_errno();
+  return p ? *p : 0;
+}
 
 int _iconv_init() {
-  HMODULE hIconvDLL, hMsvcrtDLL;
-  hIconvDLL = LoadLibrary("iconv.dll");
-  if (hIconvDLL == 0)
-    hIconvDLL = LoadLibrary("libiconv.dll");
-  hMsvcrtDLL = LoadLibrary("msvcrt.dll");
-  if (hIconvDLL != 0 && hMsvcrtDLL != 0) return -1;
-  iconv = (void *) GetProcAddress(hIconvDLL, "libiconv");
-  iconv_open = (void *) GetProcAddress(hIconvDLL, "libiconv_open");
-  iconv_close = (void *) GetProcAddress(hIconvDLL, "libiconv_close");
-  iconvctl = (void *) GetProcAddress(hIconvDLL, "libiconvctl");
-  iconv_errno = (void *) GetProcAddress(hMsvcrtDLL, "_errno");
-  if (iconv == NULL || iconv_open == NULL || iconv_close == NULL
-    || iconvctl == NULL || iconv_errno == NULL) return -2;
+  iconv_lib = LoadLibrary("iconv.dll");
+  if (iconv_lib == 0)
+    iconv_lib = LoadLibrary("libiconv.dll");
+  msvcrt_lib = LoadLibrary("msvcrt.dll");
+  if (iconv_lib == 0 || msvcrt_lib == 0) return -1;
+  _iconv = (void *) GetProcAddress(iconv_lib, "libiconv");
+  _iconv_open = (void *) GetProcAddress(iconv_lib, "libiconv_open");
+  _iconv_close = (void *) GetProcAddress(iconv_lib, "libiconv_close");
+  _iconvctl = (void *) GetProcAddress(iconv_lib, "libiconvctl");
+  _iconv_errno = (void *) GetProcAddress(msvcrt_lib, "_errno");
+  if (_iconv == NULL || _iconv_open == NULL || _iconv_close == NULL
+    || _iconvctl == NULL || _iconv_errno == NULL) return -2;
   return 0;
 }
 #else
 #include <iconv.h>
 #include <errno.h>
+
+#define ICONV_E2BIG  E2BIG
+#define ICONV_EINVAL EINVAL
+#define ICONV_EILSEQ EILSEQ
+#define ICONV_ERRNO  errno
 
 int _iconv_init() {
   return 0;
@@ -46,12 +80,13 @@ import (
 	"bytes"
 )
 
-var EILSEQ = os.Errno(int(C.EILSEQ))
-var E2BIG = os.Errno(int(C.E2BIG))
+var EINVAL = os.Errno(int(C.ICONV_EINVAL))
+var EILSEQ = os.Errno(int(C.ICONV_EILSEQ))
+var E2BIG = os.Errno(int(C.ICONV_E2BIG))
 
 func init() {
-	if (C._iconv_init() != C.int(0)) {
-		panic("can't initialize iconv");
+	if C._iconv_init() != C.int(0) {
+		panic("can't initialize iconv")
 	}
 }
 
@@ -87,7 +122,7 @@ func (cd *Iconv) Conv(input string) (result string, err os.Error) {
 	for inbytes > 0 {
 		outbytes := C.size_t(len(outbuf))
 		outptr := &outbuf[0]
-		_, err = C.iconv(cd.pointer,
+		_, err := C.iconv(cd.pointer,
 			(**C.char)(unsafe.Pointer(&inptr)), &inbytes,
 			(**C.char)(unsafe.Pointer(&outptr)), &outbytes)
 		buf.Write(outbuf[:len(outbuf)-int(outbytes)])
