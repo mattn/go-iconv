@@ -61,7 +61,7 @@ int _iconv_init() {
 #else
 #include <iconv.h>
 #include <errno.h>
-
+#include <stdlib.h>
 #define ICONV_E2BIG  E2BIG
 #define ICONV_EINVAL EINVAL
 #define ICONV_EILSEQ EILSEQ
