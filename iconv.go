@@ -43,8 +43,7 @@ int iconv_errno(void) {
   return p ? *p : 0;
 }
 
-int _iconv_init() {
-  char* iconv_dll = getenv("ICONV_DLL");
+int _iconv_init(const char* iconv_dll) {
   if (iconv_dll)
     iconv_lib = LoadLibrary(iconv_dll);
   if (iconv_lib == 0)
@@ -71,7 +70,7 @@ int _iconv_init() {
 #define ICONV_EILSEQ EILSEQ
 #define ICONV_ERRNO  errno
 
-int _iconv_init() {
+int _iconv_init(const char*) {
   return 0;
 }
 #endif
@@ -96,7 +95,12 @@ type Iconv struct {
 var onceSetupIconv sync.Once
 
 func setupIconv() {
-	if C._iconv_init() != C.int(0) {
+	var ptr *C.char
+	if iconv_dll := os.Getenv("ICONV_DLL"); len(iconv_dll) > 0 {
+		ptr = C.CString(iconv_dll)
+		defer C.free(unsafe.Pointer(ptr))
+	}
+	if C._iconv_init(ptr) != C.int(0) {
 		panic("can't initialize iconv")
 	}
 }
