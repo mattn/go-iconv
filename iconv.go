@@ -79,26 +79,31 @@ int _iconv_init() {
 import "C"
 
 import (
-	"os"
-	"unsafe"
 	"bytes"
+	"os"
+	"sync"
+	"unsafe"
 )
 
 var EINVAL = os.Errno(int(C.ICONV_EINVAL))
 var EILSEQ = os.Errno(int(C.ICONV_EILSEQ))
 var E2BIG = os.Errno(int(C.ICONV_E2BIG))
 
-func init() {
+type Iconv struct {
+	pointer C.iconv_t
+}
+
+var onceSetupIconv sync.Once
+
+func setupIconv() {
 	if C._iconv_init() != C.int(0) {
 		panic("can't initialize iconv")
 	}
 }
 
-type Iconv struct {
-	pointer C.iconv_t
-}
-
 func Open(tocode string, fromcode string) (*Iconv, os.Error) {
+	onceSetupIconv.Do(setupIconv)
+
 	pt := C.CString(tocode)
 	pf := C.CString(fromcode)
 	defer C.free(unsafe.Pointer(pt))
