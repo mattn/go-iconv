@@ -44,7 +44,11 @@ int iconv_errno(void) {
 }
 
 int _iconv_init() {
-  iconv_lib = LoadLibrary("iconv.dll");
+  char* iconv_dll = getenv("ICONV_DLL");
+  if (iconv_dll)
+    iconv_lib = LoadLibrary(iconv_dll);
+  if (iconv_lib == 0)
+    iconv_lib = LoadLibrary("iconv.dll");
   if (iconv_lib == 0)
     iconv_lib = LoadLibrary("libiconv.dll");
   msvcrt_lib = LoadLibrary("msvcrt.dll");
