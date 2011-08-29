@@ -70,7 +70,7 @@ int _iconv_init(const char* iconv_dll) {
 #define ICONV_EILSEQ EILSEQ
 #define ICONV_ERRNO  errno
 
-int _iconv_init(const char*) {
+int _iconv_init(const char* iconv_dll) {
   return 0;
 }
 #endif
