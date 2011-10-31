@@ -10,8 +10,8 @@ package iconv
 
 typedef int iconv_t;
 
-static HMODULE iconv_lib;
-static HMODULE msvcrt_lib;
+HMODULE iconv_lib = NULL;
+HMODULE msvcrt_lib = NULL;
 static size_t (*_iconv) (iconv_t cd, const char **inbuf, size_t *inbytesleft, char **outbuf, size_t *outbytesleft);
 static iconv_t (*_iconv_open) (const char *tocode, const char *fromcode);
 static int (*_iconv_close) (iconv_t cd);
@@ -44,6 +44,7 @@ int iconv_errno(void) {
 }
 
 int _iconv_init(const char* iconv_dll) {
+  iconv_lib = 0;
   if (iconv_dll)
     iconv_lib = LoadLibrary(iconv_dll);
   if (iconv_lib == 0)
