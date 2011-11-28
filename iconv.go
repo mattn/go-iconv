@@ -10,13 +10,13 @@ package iconv
 
 typedef int iconv_t;
 
-HMODULE iconv_lib = NULL;
-HMODULE msvcrt_lib = NULL;
-static size_t (*_iconv) (iconv_t cd, const char **inbuf, size_t *inbytesleft, char **outbuf, size_t *outbytesleft);
-static iconv_t (*_iconv_open) (const char *tocode, const char *fromcode);
-static int (*_iconv_close) (iconv_t cd);
-static int (*_iconvctl) (iconv_t cd, int request, void *argument);
-static int* (*_iconv_errno) (void);
+static HMODULE iconv_lib = NULL;
+static HMODULE msvcrt_lib = NULL;
+static size_t (*_iconv) (iconv_t cd, const char **inbuf, size_t *inbytesleft, char **outbuf, size_t *outbytesleft) = NULL;
+static iconv_t (*_iconv_open) (const char *tocode, const char *fromcode) = NULL;
+static int (*_iconv_close) (iconv_t cd) = NULL;
+static int (*_iconvctl) (iconv_t cd, int request, void *argument) = NULL;
+static int* (*_iconv_errno) (void) = NULL;
 
 #define ICONV_E2BIG  7
 #define ICONV_EINVAL 22
@@ -26,7 +26,8 @@ size_t iconv(iconv_t cd, const char **inbuf, size_t *inbytesleft, char **outbuf,
   return _iconv(cd, inbuf, inbytesleft, outbuf, outbytesleft);
 }
 
-iconv_t iconv_open(const char *tocode, const char *fromcode) {
+static iconv_t
+iconv_open(const char *tocode, const char *fromcode) {
   return _iconv_open(tocode, fromcode);
 }
 
@@ -82,12 +83,13 @@ import (
 	"bytes"
 	"os"
 	"sync"
+	"syscall"
 	"unsafe"
 )
 
-var EINVAL = os.Errno(int(C.ICONV_EINVAL))
-var EILSEQ = os.Errno(int(C.ICONV_EILSEQ))
-var E2BIG = os.Errno(int(C.ICONV_E2BIG))
+var EINVAL = syscall.Errno(C.ICONV_EINVAL)
+var EILSEQ = syscall.Errno(C.ICONV_EILSEQ)
+var E2BIG = syscall.Errno(C.ICONV_E2BIG)
 
 type Iconv struct {
 	pointer C.iconv_t
