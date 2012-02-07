@@ -161,7 +161,7 @@ func (cd *Iconv) ConvBytes(inbuf []byte) (result []byte, err error) {
 		return []byte{}, nil
 	}
 
-	outbuf := make([]byte, len(inbuf))
+	outbuf := make([]byte, len(inbuf) * 3)
 	inbytes := C.size_t(len(inbuf))
 	inptr := &inbuf[0]
 
