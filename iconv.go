@@ -76,6 +76,8 @@ int _iconv_init(const char* iconv_dll) {
   return 0;
 }
 #endif
+
+#cgo darwin LDFLAGS: -liconv
 */
 import "C"
 
